@@ -1,4 +1,4 @@
-# crowley/eca.py
+# pages/eca.py
 import streamlit as st
 import pandas as pd
 import json
@@ -127,7 +127,6 @@ def render(df_crowley, cookies, data_atualizacao):
         tipos_disponiveis = sorted(df_context["Tipo"].dropna().unique().tolist())
         
         # LINHA 2: Veículo, Concorrência, Tipo E TOGGLE (Matriz)
-        # Ajuste de proporções para o botão ficar harmônico
         c4, c5, c6, c7 = st.columns([1.3, 1.3, 1.1, 0.8])
         
         # 1. Veículo Alvo
@@ -180,12 +179,11 @@ def render(df_crowley, cookies, data_atualizacao):
                 on_change=on_change_reset
             )
 
-        # 4. Botão Toggle Share (Estilo Botão)
+        # 4. Botão Toggle Share
         if "eca_share_toggle" not in st.session_state:
             st.session_state.eca_share_toggle = True
 
         with c7:
-            # Spacer para alinhar com os inputs que possuem label (~28px)
             st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
             
             is_active_share = st.session_state.eca_share_toggle
@@ -196,12 +194,11 @@ def render(df_crowley, cookies, data_atualizacao):
                 btn_type = "secondary"
                 btn_text = "Share %: Inativo"
             
-            # Botão que funciona como Toggle
-            if st.button(btn_text, type=btn_type, key="btn_share_toggle", help="Ativar/Desativar coluna de Share %", use_container_width=True):
+            # Botão agora apenas altera o Session State e dá um rerun leve
+            if st.button(btn_text, type=btn_type, key="btn_share_toggle", help="Alternar visualização entre Volume e Share", use_container_width=True):
                 st.session_state.eca_share_toggle = not is_active_share
                 st.rerun()
             
-            # Variável final para uso no código
             show_share = st.session_state.eca_share_toggle
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -229,6 +226,7 @@ def render(df_crowley, cookies, data_atualizacao):
 
     if st.session_state.get("eca_search_trigger"):
         
+        # --- FILTRAGEM DE DADOS (Feita uma única vez) ---
         df_base = df_context.copy()
         
         if sel_tipos:
@@ -251,7 +249,12 @@ def render(df_crowley, cookies, data_atualizacao):
         ausentes = anunciantes_comp - anunciantes_target
 
         # --- HELPER DE TABELA ---
-        def criar_tabela_resumo(df_src, lista_anunciantes, is_exclusive=False, show_share=True):
+        def criar_tabela_resumo(df_src, lista_anunciantes, is_exclusive=False, calc_share=True):
+            """
+            Gera o DataFrame formatado.
+            Se calc_share=True, retorna a versão complexa com colunas de % e Volume.
+            Se calc_share=False, retorna a versão simples apenas com Volume.
+            """
             if not lista_anunciantes: return pd.DataFrame()
             
             df_final = df_src[df_src["Anunciante"].isin(lista_anunciantes)].copy()
@@ -266,12 +269,14 @@ def render(df_crowley, cookies, data_atualizacao):
             total_por_anunciante = pivot_qty.sum(axis=1)
             pivot_qty = pivot_qty.loc[total_por_anunciante.sort_values(ascending=False).index]
             
+            # Se for exclusivo, Share é sempre 100%, então não faz sentido mostrar tabela complexa
             if is_exclusive:
                 total_row = pivot_qty.sum(numeric_only=True)
                 pivot_qty.loc["TOTAL GERAL"] = total_row
                 return pivot_qty
             
-            if not show_share:
+            # Versão SEM Share (Simples)
+            if not calc_share:
                 pivot_simple = pivot_qty.copy()
                 pivot_simple["TOTAL"] = total_por_anunciante
                 
@@ -279,7 +284,7 @@ def render(df_crowley, cookies, data_atualizacao):
                 pivot_simple.loc["TOTAL GERAL"] = total_row
                 return pivot_simple
 
-            # Com Share
+            # Versão COM Share (Complexa)
             pivot_share = pivot_qty.div(total_por_anunciante.replace(0, 1), axis=0) * 100
             
             cols = []
@@ -309,11 +314,26 @@ def render(df_crowley, cookies, data_atualizacao):
                     else: val = totals_qty.get(emissora, 0)
                     total_geral_row.append(val)
                 else:
-                    # SHARE % NA LINHA DE TOTAL GERAL DEVE SER VAZIO
                     total_geral_row.append(np.nan)
             
             df_multi.loc["TOTAL GERAL"] = total_geral_row
             return df_multi
+
+        # --- GERAÇÃO DE TODAS AS TABELAS (LOAD PREVENTIVO) ---
+        # Calculamos as duas versões (com e sem share) para evitar recálculo ao clicar no botão
+        
+        # 1. Exclusivos (Sempre sem share complexo)
+        df1 = criar_tabela_resumo(df_target, exclusivos, is_exclusive=True)
+
+        # 2. Compartilhados (Com Share e Sem Share)
+        df_full_shared = pd.concat([df_target[df_target["Anunciante"].isin(compartilhados)], df_comp[df_comp["Anunciante"].isin(compartilhados)]])
+        df2_share = criar_tabela_resumo(df_full_shared, compartilhados, is_exclusive=False, calc_share=True)
+        df2_simple = criar_tabela_resumo(df_full_shared, compartilhados, is_exclusive=False, calc_share=False)
+
+        # 3. Ausentes (Com Share e Sem Share)
+        df3_share = criar_tabela_resumo(df_comp, ausentes, is_exclusive=False, calc_share=True)
+        df3_simple = criar_tabela_resumo(df_comp, ausentes, is_exclusive=False, calc_share=False)
+
 
         # --- HELPERS DE ESTILO ---
         def safe_fmt_int(x):
@@ -328,7 +348,7 @@ def render(df_crowley, cookies, data_atualizacao):
                 return f"{float(x):.1f}%"
             except: return str(x)
 
-        def style_df(df, is_exclusive=False, show_share=True):
+        def style_df(df, is_exclusive=False, is_share_mode=True):
             if df.empty: return df
             
             header_styles = [
@@ -337,7 +357,7 @@ def render(df_crowley, cookies, data_atualizacao):
                 {'selector': 'td', 'props': [('text-align', 'center')]}
             ]
             
-            if is_exclusive or not show_share:
+            if is_exclusive or not is_share_mode:
                 s = df.style.format(safe_fmt_int)
             else:
                 format_dict = {}
@@ -345,7 +365,6 @@ def render(df_crowley, cookies, data_atualizacao):
                     if col[1] == "Share %": format_dict[col] = safe_fmt_pct
                     else: format_dict[col] = safe_fmt_int
                 
-                # AQUI: na_rep=" " garante que o np.nan apareça como espaço em branco na tela
                 s = df.style.format(format_dict, na_rep=" ")
 
             s = s.set_properties(**{'text-align': 'center'})
@@ -353,59 +372,55 @@ def render(df_crowley, cookies, data_atualizacao):
             s = s.apply(lambda x: ["background-color: #f0f2f6; font-weight: bold" if (hasattr(x, 'name') and x.name == "TOTAL GERAL") else "" for i in x], axis=1)
             return s
 
+        # --- EXIBIÇÃO CONDICIONAL ---
         t1, t2, t3 = st.tabs([f"Exclusivos ({len(exclusivos)})", f"Compartilhados ({len(compartilhados)})", f"Ausentes ({len(ausentes)})"])
 
         with t1:
-            df1 = criar_tabela_resumo(df_target, exclusivos, is_exclusive=True)
             if not df1.empty: 
                 st.dataframe(style_df(df1, is_exclusive=True), width="stretch", height=500)
             else: st.info("Nenhum registro.")
 
         with t2:
-            df_full_shared = pd.concat([df_target[df_target["Anunciante"].isin(compartilhados)], df_comp[df_comp["Anunciante"].isin(compartilhados)]])
-            df2 = criar_tabela_resumo(df_full_shared, compartilhados, is_exclusive=False, show_share=show_share)
-            if not df2.empty: 
-                st.dataframe(style_df(df2, is_exclusive=False, show_share=show_share), width="stretch", height=500)
+            # Decide qual tabela mostrar baseado no Toggle (sem recalcular nada)
+            df_to_show = df2_share if show_share else df2_simple
+            if not df_to_show.empty: 
+                st.dataframe(style_df(df_to_show, is_exclusive=False, is_share_mode=show_share), width="stretch", height=500)
             else: st.info("Nenhum registro.")
 
         with t3:
-            df3 = criar_tabela_resumo(df_comp, ausentes, is_exclusive=False, show_share=show_share)
-            if not df3.empty: 
-                st.dataframe(style_df(df3, is_exclusive=False, show_share=show_share), width="stretch", height=500)
+            # Decide qual tabela mostrar baseado no Toggle (sem recalcular nada)
+            df_to_show = df3_share if show_share else df3_simple
+            if not df_to_show.empty: 
+                st.dataframe(style_df(df_to_show, is_exclusive=False, is_share_mode=show_share), width="stretch", height=500)
             else: st.info("Nenhum registro.")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # --- DETALHAMENTO ---
+        # --- DETALHAMENTO (Preparação para export) ---
+        df_global_view = pd.concat([df_target, df_comp])
+        rename_map = {
+            "Praca": "Praça", "Anuncio": "Anúncio", "Duracao": "Duração",
+            "Emissora": "Veículo", "Volume de Insercoes": "Inserções", 
+            "Tipo": "Tipo de Veiculação", "DayPart": "DayPart"
+        }
+        df_detalhe = df_global_view.copy()
+        if "Data_Dt" in df_detalhe.columns:
+            df_detalhe["Data"] = df_detalhe["Data_Dt"].dt.strftime("%d/%m/%Y")
+        cols_originais = ["Data", "Anunciante", "Anuncio", "Duracao", "Praca", "Emissora", "Tipo", "DayPart", "Volume de Insercoes"]
+        cols_existentes = [c for c in cols_originais if c in df_detalhe.columns]
+        df_exib = df_detalhe[cols_existentes].rename(columns=rename_map)
+        df_exib.sort_values(by=["Anunciante", "Data"], inplace=True)
+        
         with st.expander("Fonte de Dados Completa (Detalhamento)", expanded=False):
-            df_global_view = pd.concat([df_target, df_comp])
-            
-            rename_map = {
-                "Praca": "Praça", "Anuncio": "Anúncio", "Duracao": "Duração",
-                "Emissora": "Veículo", "Volume de Insercoes": "Inserções", 
-                "Tipo": "Tipo de Veiculação", "DayPart": "DayPart"
-            }
-            
-            df_detalhe = df_global_view.copy()
-            if "Data_Dt" in df_detalhe.columns:
-                df_detalhe["Data"] = df_detalhe["Data_Dt"].dt.strftime("%d/%m/%Y")
-            
-            cols_originais = ["Data", "Anunciante", "Anuncio", "Duracao", "Praca", "Emissora", "Tipo", "DayPart", "Volume de Insercoes"]
-            cols_existentes = [c for c in cols_originais if c in df_detalhe.columns]
-            
-            df_exib = df_detalhe[cols_existentes].rename(columns=rename_map)
-            df_exib.sort_values(by=["Anunciante", "Data"], inplace=True)
-            
             st.dataframe(df_exib, width="stretch", hide_index=True)
 
         st.markdown("---")
         
-        # --- EXPORTAÇÃO ---
+        # --- EXPORTAÇÃO (AGORA COMPLETA: COM E SEM SHARE) ---
         with st.spinner("Gerando Excel..."):
             buf = io.BytesIO()
             with pd.ExcelWriter(buf, engine='xlsxwriter') as writer:
                 workbook = writer.book
-                
                 fmt_center = workbook.add_format({'align': 'center', 'valign': 'vcenter'})
                 fmt_left = workbook.add_format({'align': 'left', 'valign': 'vcenter'})
                 
@@ -427,20 +442,28 @@ def render(df_crowley, cookies, data_atualizacao):
 
                 def save_tab(df, name, include_index=True):
                     if not df.empty:
-                        # O Pandas exporta np.nan como célula vazia automaticamente
-                        df.to_excel(writer, sheet_name=name, index=include_index)
-                        worksheet = writer.sheets[name]
+                        # Limpa nome da aba se for muito longo
+                        safe_name = name[:31]
+                        df.to_excel(writer, sheet_name=safe_name, index=include_index)
+                        worksheet = writer.sheets[safe_name]
                         worksheet.set_column('A:A', 40, fmt_left)
                         worksheet.set_column('B:Z', 15, fmt_center)
                 
+                # Exclusivos (Sempre Igual)
                 save_tab(df1, 'Exclusivos')
-                save_tab(df2, 'Compartilhados')
-                save_tab(df3, 'Ausentes')
                 
+                # Compartilhados (Duas Versões)
+                save_tab(df2_simple, 'Comp. (Volume)')
+                save_tab(df2_share, 'Comp. (Share)')
+                
+                # Ausentes (Duas Versões)
+                save_tab(df3_simple, 'Ausentes (Volume)')
+                save_tab(df3_share, 'Ausentes (Share)')
+                
+                # Detalhamento
                 if not df_exib.empty:
                     df_exib.to_excel(writer, sheet_name='Detalhamento', index=False)
                     worksheet = writer.sheets['Detalhamento']
-                    
                     for idx, col_name in enumerate(df_exib.columns):
                         if col_name in ["Anunciante", "Anúncio", "Tipo de Veiculação"]:
                             worksheet.set_column(idx, idx, 35, fmt_left)
@@ -449,6 +472,13 @@ def render(df_crowley, cookies, data_atualizacao):
 
         c_vazio1_exp, c_vazio2_exp, c_btn_exp, c_vazio3_exp, c_vazio4_exp = st.columns([1, 1, 1, 1, 1])
         with c_btn_exp:
-            st.download_button("Exportar Excel", data=buf, file_name=f"ECA_{sel_veiculo}_{datetime.now().strftime('%d%m')}.xlsx", mime="application/vnd.ms-excel", type="secondary", use_container_width=True)
+            st.download_button(
+                "Exportar Excel", 
+                data=buf, 
+                file_name=f"ECA_{sel_veiculo}_{datetime.now().strftime('%d%m')}.xlsx", 
+                mime="application/vnd.ms-excel", 
+                type="secondary", 
+                use_container_width=True
+            )
         
         st.markdown(f"<div style='text-align:center;color:#666;font-size:0.8rem;margin-top:5px;'>Última atualização da base de dados: {data_atualizacao}</div>", unsafe_allow_html=True)
