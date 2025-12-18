@@ -143,7 +143,7 @@ for option in menu_options:
 # Link Voltar para o app principal
 link_faturamento = "https://novabrasil-datadriven.streamlit.app" 
 html_menu.append(
-    f'<a class="sidebar-nav-btn" href="{link_faturamento}" target="_self">⬅ Voltar para Faturamento</a>'
+    f'<a class="sidebar-nav-btn" href="{link_faturamento}" target="_blank">Voltar para Faturamento</a>'
 )
 
 st.sidebar.markdown(f'<div class="sidebar-nav-container">{"".join(html_menu)}</div>', unsafe_allow_html=True)
@@ -204,4 +204,5 @@ footer_html = """
     <p class="footer-text">Conteúdo Confidencial. A distribuição a terceiros não autorizados é estritamente proibida.</p>
 </div>
 """
+
 st.markdown(footer_html, unsafe_allow_html=True)
