@@ -1,0 +1,12 @@
+libnss3
+libxss1
+libasound2
+libxtst6
+libx11-xcb1
+libfontconfig1
+libgl1-mesa-glx
+libgtk-3-0
+libdbus-glib-1-2
+xdg-utils
+locales
+locales-all

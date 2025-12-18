@@ -1,0 +1,297 @@
+/*utils/style.css*/
+
+/* ==================== REMOVER ÂNCORAS (CORRENTINHAS) ==================== */
+[data-testid="stHeaderActionElements"] {
+    display: none !important;
+}
+
+/* ==================== CUSTOMIZAÇÃO GERAL (DESKTOP) ==================== */
+:root {
+    --azul-nb: #007bff;
+    --azul-escuro: #004a99;
+}
+
+/* --- REMOÇÃO DE MARGENS DO CABEÇALHO/RODAPÉ (GLOBAL) --- */
+.block-container {
+    padding-top: 1.5rem !important; 
+    padding-bottom: 1rem !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+}
+
+/* Ajuste fino nos selects e multiselects */
+[data-testid="stMultiSelect"] [data-baseweb="tag"] {
+    background-color: var(--azul-nb) !important;
+    color: white !important;
+    border-radius: 6px !important;
+}
+[data-testid="stMultiSelect"] [data-baseweb="tag"] span {
+    color: white !important;
+    font-weight: 600 !important;
+}
+[data-testid="stMultiSelect"] [data-baseweb="tag"] svg {
+    fill: white !important;
+}
+[data-baseweb="select"] > div {
+    border: 1.5px solid var(--azul-nb) !important;
+    border-radius: 8px !important;
+    background-color: rgba(0,123,255,0.03) !important;
+}
+[data-baseweb="select"]:focus-within > div {
+    border-color: var(--azul-escuro) !important;
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.2) !important;
+}
+
+/* Slider Customizado */
+.stSlider .rc-slider-track { background: var(--azul-nb) !important; height: 6px !important; }
+.stSlider .rc-slider-rail { background: rgba(0,123,255,0.15) !important; height: 6px !important; }
+.stSlider .rc-slider-handle {
+    border: 2px solid var(--azul-escuro) !important;
+    background: var(--azul-nb) !important;
+    box-shadow: 0 0 5px rgba(0,91,187,0.3) !important;
+}
+
+/* ==================== METRICS / CARDS (GLOBAL - DESKTOP E MOBILE) ==================== */
+[data-testid="stMetric"] {
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    justify-content: center; 
+    text-align: center;
+    width: 100%;
+    margin: auto;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+[data-testid="stMetricLabel"] {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+}
+
+[data-testid="stMetricLabel"] div, 
+[data-testid="stMetricLabel"] p {
+    text-align: center !important;
+    width: 100% !important;
+    justify-content: center !important;
+    display: flex !important;
+}
+
+[data-testid="stMetricValue"] {
+    justify-content: center;
+    width: 100%;
+    display: flex;
+}
+
+[data-testid="stMetricDelta"] {
+    justify-content: center;
+    width: 100%;
+    display: flex;
+}
+
+/* ==================== BOTÕES ==================== */
+button[kind="primary"] {
+    background-color: var(--azul-nb) !important;
+    border-color: var(--azul-nb) !important;
+    color: white !important;
+}
+button[kind="primary"]:hover, button[kind="primary"]:focus {
+    background-color: var(--azul-escuro) !important;
+    border-color: var(--azul-escuro) !important;
+    color: white !important;
+}
+
+button[kind="secondary"] {
+    background-color: transparent !important;
+    color: var(--azul-nb) !important;
+    border: 1.5px solid var(--azul-nb) !important;
+}
+button[kind="secondary"]:hover, button[kind="secondary"]:focus {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+    color: var(--azul-escuro) !important;
+    border-color: var(--azul-escuro) !important;
+}
+
+/* ==================== BARRA LATERAL (SIDEBAR) ==================== */
+[data-testid="stSidebar"] {
+    min-width: 220px !important;
+    max-width: 220px !important;
+    width: 220px !important;
+}
+[data-testid="stSidebar"] * {
+    font-size: 0.85rem !important;
+}
+.sidebar-nav-btn {
+    display: block;
+    padding: 8px 10px;
+    margin: 4px 10px;
+    border-radius: 6px; 
+    color: #004a99; 
+    text-decoration: none !important; 
+    font-weight: 600;
+    transition: all 0.1s;
+    background-color: transparent;
+    cursor: pointer;
+    text-align: left; 
+    font-size: 0.85rem !important; 
+}
+.sidebar-nav-btn:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+    text-decoration: none !important; 
+}
+.sidebar-nav-btn.active {
+    background-color: var(--azul-nb) !important;
+    color: white !important;
+    font-weight: 700 !important;
+    border-radius: 6px !important; 
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+.sidebar-nav-container + div > p {
+    font-size: 0.8rem; 
+    font-weight: 600; 
+    color: #004a99; 
+}
+
+/* ==================== POP-UP / MODAL ==================== */
+[data-testid="stDialog"] [data-testid="stMarkdownContainer"] p {
+    font-size: 1rem !important;
+    color: #333 !important; 
+}
+[data-testid="stDialog"] label {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    color: #003366 !important;
+}
+[data-testid="stDialog"] button[kind="secondary"] {
+    background-color: #ffffff !important;
+    min-height: 40px !important;
+}
+[data-testid="stDialog"] [aria-label="Close"] svg {
+    fill: #000 !important;
+    stroke: #000 !important;
+}
+[data-testid="stDialog"] [aria-label="Close"] {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+}
+.popup-title-styled {
+    color: #004a99;
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+.popup-subtitle {
+    text-align: center;
+    color: #444;
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+}
+
+/* ==================== TOGGLE ==================== */
+[data-testid="stToggle"] [data-baseweb="checkbox"] > div {
+    background-color: #ccc !important;
+    border-color: #aaa !important;
+}
+[data-testid="stToggle"] [data-baseweb="checkbox"] input:checked + div {
+    background-color: var(--azul-nb) !important;
+    border-color: var(--azul-escuro) !important;
+}
+
+/* ==================== FOOTER (COMPACTO) ==================== */
+.footer-container {
+    position: relative;
+    width: 100%;
+    background-color: #f1f1f1;
+    text-align: center;
+    padding: 10px 0;
+    margin-top: 20px;
+    font-size: 0.75rem;
+    color: #555;
+    border-top: 1px solid #ddd;
+    display: block;
+}
+.footer-text { margin: 0; padding: 0; line-height: 1.3; }
+.footer-date { font-weight: 600; color: #003366; margin-bottom: 2px; }
+
+/* ==================== MOBILE ==================== */
+@media only screen and (max-width: 768px) {
+    .block-container {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        padding-top: 1rem !important; 
+        padding-bottom: 2rem !important;
+    }
+    [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        row-gap: 40px !important; 
+        column-gap: 10px !important;
+        padding: 0 2px !important;
+        flex-wrap: wrap !important;
+    }
+    [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) > [data-testid="column"] {
+        width: auto !important;
+        flex: 1 !important;
+        min-width: 0px !important; 
+        padding: 0 !important; 
+        margin: 0 !important;
+    }
+    [data-testid="stMetric"] {
+        padding: 12px 4px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        height: 100% !important;
+        min-height: 90px !important;
+    }
+    [data-testid="stMetricLabel"] div, [data-testid="stMetricLabel"] p {
+        font-size: 0.75rem !important;
+        line-height: 1.2 !important;
+        white-space: normal !important;
+    }
+    [data-testid="stMetricValue"] div {
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+    }
+    [data-testid="stMetricDelta"] div, [data-testid="stMetricDelta"] svg {
+        font-size: 0.65rem !important;
+    }
+    [data-testid="stHorizontalBlock"] [data-testid="column"]:has([data-baseweb="select"]),
+    [data-testid="stHorizontalBlock"] [data-testid="column"]:has(button) {
+        grid-column: span 2 !important; 
+        width: 100% !important;
+    }
+    h1, h2 { font-size: 1.4rem !important; }
+    h3, .custom-chart-title { font-size: 1rem !important; }
+    p, label, .stMarkdown { font-size: 0.9rem !important; }
+    [data-testid="stDataFrame"] {
+        font-size: 0.75rem !important;
+    }
+    .sidebar-nav-btn {
+        padding: 12px 10px !important;
+        font-size: 1rem !important;
+        margin-bottom: 8px !important;
+    }
+    .footer-container {
+        display: none !important;
+    }
+    .nb-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-rows: auto !important;
+        gap: 10px !important;
+        width: 100% !important;
+        padding: 0 5px !important;
+    }
+    .nb-card {
+        width: 100% !important;
+        height: 85px !important;
+        font-size: 0.85rem !important;
+        border-radius: 10px !important;
+    }
+}

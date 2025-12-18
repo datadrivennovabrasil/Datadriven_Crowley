@@ -1,0 +1,13 @@
+streamlit==1.51.0
+pandas==2.3.3
+numpy==2.3.4
+openpyxl==3.1.5
+xlsxwriter==3.2.9
+streamlit-cookies-manager==0.2.0
+google-api-python-client==2.155.0
+google-auth==2.37.0
+google-auth-oauthlib==1.2.1
+google-auth-httplib2==0.2.0
+typing_extensions==4.15.0
+packaging==25.0
+pyarrow==18.1.0
