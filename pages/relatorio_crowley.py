@@ -3,12 +3,9 @@ import streamlit as st
 import pandas as pd
 from utils.loaders import load_crowley_base
 
-# ==================== AJUSTE DE IMPORTAÇÃO ====================
-# Antes: from crowley import ...
-# Agora: importamos diretamente de 'pages' pois os arquivos estão na mesma pasta
-from pages import busca_novos, eca, flight, ranking_analitico
+# ==================== IMPORTAÇÃO DOS MÓDULOS (NOVOS NOMES) ====================
+from pages import opportunity_radar, campaign_flow, presence_map, performance_index
 
-# RECEBE cookies COMO ARGUMENTO
 def render(cookies):
     
     # --- 1. Carrega dados e data (Cache) ---
@@ -20,39 +17,47 @@ def render(cookies):
     if isinstance(current_view, list):
         current_view = current_view[0]
 
-    # ==================== CSS GLOBAL DO CROWLEY ====================
+    # ==================== CSS CROWLEY ====================
     st.markdown("""
         <style>
-        /* Estilos do Menu Principal */
         .nb-container { display: flex; justify-content: center; align-items: center; flex-direction: column; width: 100%; margin-top: 2rem; }
-        .nb-grid { display: grid; grid-template-columns: repeat(2, 240px); grid-template-rows: repeat(2, 130px); gap: 1.5rem; justify-content: center; }
-        .nb-card { background-color: #007dc3; border: 2px solid white; border-radius: 15px; color: white !important; text-decoration: none !important; font-size: 1rem; font-weight: 600; height: 120px; width: 240px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); transition: all 0.25s ease-in-out; text-align: center; }
+        
+        /* Ajuste do Grid para acomodar descrições */
+        .nb-grid { display: grid; grid-template-columns: repeat(2, 280px); grid-template-rows: repeat(2, 160px); gap: 1.5rem; justify-content: center; }
+        
+        .nb-card { 
+            background-color: #007dc3; 
+            border: 2px solid white; 
+            border-radius: 15px; 
+            color: white !important; 
+            text-decoration: none !important; 
+            font-size: 1.1rem; 
+            font-weight: 700; 
+            height: 150px; 
+            width: 280px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); 
+            transition: all 0.25s ease-in-out; 
+            text-align: center;
+            padding: 10px;
+        }
+        
+        .nb-card span {
+            font-size: 0.8rem;
+            font-weight: 400;
+            margin-top: 8px;
+            color: #e0f7fa;
+            line-height: 1.2;
+        }
+
         .nb-card:hover { background-color: #00a8e0; transform: scale(1.05); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25); text-decoration: none !important; }
         .nb-card:active { transform: scale(0.97); background-color: #004b8d; }
         
-        /* AJUSTE: Centralização do Rodapé */
-        .footer-date { 
-            margin-top: 50px; 
-            text-align: center; /* Centralizado */
-            font-size: 0.85rem; 
-            color: #666; 
-            border-top: 1px solid #eee; 
-            padding-top: 10px; 
-            width: 100%; 
-        }
-        
-        /* Estilos Personalizados da Página */
-        .filter-container { background-color: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #e9ecef; margin-bottom: 20px; }
-        
-        /* Título Centralizado */
-        .page-title-centered {
-            text-align: center;
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #003366;
-            margin-bottom: 1.5rem;
-            margin-top: 0.5rem;
-        }
+        .footer-date { margin-top: 50px; text-align: center; font-size: 0.85rem; color: #666; border-top: 1px solid #eee; padding-top: 10px; width: 100%; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -60,16 +65,29 @@ def render(cookies):
     
     # --- 1. MENU PRINCIPAL ---
     if current_view == "menu":
-        st.title("Relatório Crowley")
-        st.markdown("Análise de concorrência e monitoramento de spots.")
+        # ALTERAÇÃO AQUI: Título HTML centralizado com cor da marca
+        st.markdown("<h1 style='text-align: center; color: #003366; margin-bottom: 0.5rem;'>Crowley Intelligence</h1>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center; color: #555; margin-bottom: 1rem;'>Selecione o módulo de análise desejado:</div>", unsafe_allow_html=True)
 
         st.markdown("""
         <div class="nb-container">
           <div class="nb-grid">
-            <a href="?view=eca" target="_self" class="nb-card">Relatório ECA</a>
-            <a href="?view=novos" target="_self" class="nb-card">Busca de Novos</a>
-            <a href="?view=ranking" target="_self" class="nb-card">Ranking Analítico</a>
-            <a href="?view=flight" target="_self" class="nb-card">Relatório Flight</a>
+            <a href="?view=opportunity" target="_self" class="nb-card">
+                Opportunity Radar
+                <span>Novos anunciantes de um<br>determinado período</span>
+            </a>
+            <a href="?view=campaign" target="_self" class="nb-card">
+                Campaign Flow
+                <span>Anunciantes exclusivos,<br>compartilhados e ausentes</span>
+            </a>
+            <a href="?view=presence" target="_self" class="nb-card">
+                Presence Map
+                <span>Presença de anunciantes<br>em horário comercial</span>
+            </a>
+            <a href="?view=performance" target="_self" class="nb-card">
+                Performance Index
+                <span>Ranking comparativo<br>por anunciante</span>
+            </a>
           </div>
         </div>
         """, unsafe_allow_html=True)
@@ -80,18 +98,18 @@ def render(cookies):
             </div>
         """, unsafe_allow_html=True)
 
-    # --- 2. MÓDULOS ESPECÍFICOS ---
-    elif current_view == "novos":
-        busca_novos.render(df_crowley, cookies, data_atualizacao)
+    # --- 2. ROTEAMENTO PARA OS NOVOS ARQUIVOS ---
+    elif current_view == "opportunity":
+        opportunity_radar.render(df_crowley, cookies, data_atualizacao)
 
-    elif current_view == "eca":
-        eca.render(df_crowley, cookies, data_atualizacao)
+    elif current_view == "campaign":
+        campaign_flow.render(df_crowley, cookies, data_atualizacao)
     
-    elif current_view == "ranking":
-        ranking_analitico.render(df_crowley, cookies, data_atualizacao)
+    elif current_view == "performance":
+        performance_index.render(df_crowley, cookies, data_atualizacao)
     
-    elif current_view == "flight":
-        flight.render(df_crowley, cookies, data_atualizacao)
+    elif current_view == "presence":
+        presence_map.render(df_crowley, cookies, data_atualizacao)
     
     else:
         st.error("Página não encontrada.")

@@ -77,7 +77,7 @@ if not st.session_state.authenticated:
 
         if submitted:
             try:
-                senha_correta = st.secrets["senha_app_ribeirao_preto"]
+                senha_correta = st.secrets["senha_app"]
             except Exception:
                 st.error("Erro: Senha não configurada no secrets.")
                 st.stop()
@@ -100,7 +100,7 @@ def local_css(file_name):
 
 local_css("utils/style.css")
 
-# Esconde navegação padrão do Streamlit (Correntinhas)
+# Esconde navegação padrão do Streamlit
 st.markdown("""
     <style>
     [data-testid="stSidebarNav"] {display: none;}
@@ -109,26 +109,25 @@ st.markdown("""
 
 # ==================== BARRA LATERAL (SIDEBAR) ====================
 
-# 1. LOGO DA NOVABRASIL (NO TOPO)
+# 1. LOGO DA NOVABRASIL
 logo_path = os.path.join("assets", "NOVABRASIL_TH+_LOGOS_VETORIAIS-07.png")
 if os.path.exists(logo_path):
     logo = Image.open(logo_path)
-    # width=160 ajusta para ficar parecido com o print enviado
     st.sidebar.image(logo, width=160) 
 
 # 2. MENU DE NAVEGAÇÃO
 query_params = st.query_params
 current_view = query_params.get("view", ["menu"])[0]
 
-# Texto idêntico ao print: "Selecione a página:"
 st.sidebar.markdown('<p style="font-size:0.85rem; font-weight:600; margin-bottom: 0.5rem; margin-left: 10px;">Selecione a página:</p>', unsafe_allow_html=True)
 
+# --- ATUALIZAÇÃO DOS NOMES NO MENU ---
 menu_options = [
-    {"label": "Início", "view": "menu"}, # Renomeado para "Início" para bater com o visual
-    {"label": "Relatório ECA", "view": "eca"},
-    {"label": "Busca de Novos", "view": "novos"},
-    {"label": "Ranking Analítico", "view": "ranking"},
-    {"label": "Relatório Flight", "view": "flight"},
+    {"label": "Início", "view": "menu"},
+    {"label": "Opportunity Radar", "view": "opportunity"},
+    {"label": "Campaign Flow", "view": "campaign"},
+    {"label": "Presence Map", "view": "presence"},
+    {"label": "Performance Index", "view": "performance"},
 ]
 
 html_menu = []
@@ -143,7 +142,7 @@ for option in menu_options:
 # Link Voltar para o app principal
 link_faturamento = "https://novabrasil-datadriven.streamlit.app" 
 html_menu.append(
-    f'<a class="sidebar-nav-btn" href="{link_faturamento}" target="_blank">Voltar para Faturamento</a>'
+    f'<a class="sidebar-nav-btn" href="{link_faturamento}" target="_blank">Voltar p/ Faturamento</a>'
 )
 
 st.sidebar.markdown(f'<div class="sidebar-nav-container">{"".join(html_menu)}</div>', unsafe_allow_html=True)
@@ -154,17 +153,17 @@ st.sidebar.divider()
 @st.dialog("Banner de Boas-vindas", width="medium")
 def modal_boas_vindas():
     st.markdown("""
-        <div class="popup-title-styled">Relatório Crowley</div>
-        <div class="popup-subtitle">Projeto Data Driven Novabrasil | Intelligence</div>
+        <div class="popup-title-styled">Intelligence Crowley</div>
+        <div class="popup-subtitle">Novos Módulos Data Driven</div>
     """, unsafe_allow_html=True)
 
-    with st.container(height=300, border=True):
+    with st.container(height=320, border=True):
         st.markdown("""
-        ### Módulos Disponíveis:
-        * **Relatório ECA:** Análise de Exclusivos, Compartilhados e Ausentes.
-        * **Busca de Novos:** Identificação de anunciantes que não estavam no período anterior.
-        * **Ranking:** Comparativo de Share e Volume de inserções.
-        * **Flight:** Mapa de calor de inserções (Dia x Hora/Programa).
+        ### O que há de novo?
+        * **Opportunity Radar:** Quem está entrando? Onde estão as oportunidades? (Antigo Busca de Novos).
+        * **Campaign Flow:** Como o mercado se movimenta no tempo? (Antigo ECA).
+        * **Presence Map:** Onde cada marca ocupa o território? (Antigo Flight).
+        * **Performance Index:** Quem é mais forte e consistente? (Antigo Ranking).
         ---
         """)
         st.markdown("**Dúvidas:** (31) 9.9274-4574 - Silvia Freitas")
@@ -204,5 +203,4 @@ footer_html = """
     <p class="footer-text">Conteúdo Confidencial. A distribuição a terceiros não autorizados é estritamente proibida.</p>
 </div>
 """
-
 st.markdown(footer_html, unsafe_allow_html=True)
