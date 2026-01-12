@@ -105,13 +105,34 @@ def render(df_crowley, cookies, data_atualizacao):
     with st.form("form_structure"):
         c1, c2, c3 = st.columns(3)
         with c1:
-            sel_rows = st.multiselect("Linhas (Índice)", options=valid_dims, default=default_rows, format_func=lambda x: dim_map.get(x, x), key="input_rows")
+            sel_rows = st.multiselect(
+                "Linhas (Índice)", 
+                options=valid_dims, 
+                default=default_rows, 
+                format_func=lambda x: dim_map.get(x, x), 
+                key="input_rows",
+                placeholder="Escolha uma opção"  # Tradução
+            )
             add_total_rows = st.checkbox("Adicionar Total (Linhas)", key="input_chk_rows")
         with c2:
-            sel_cols = st.multiselect("Colunas", options=valid_dims, default=default_cols, format_func=lambda x: dim_map.get(x, x), key="input_cols")
+            sel_cols = st.multiselect(
+                "Colunas", 
+                options=valid_dims, 
+                default=default_cols, 
+                format_func=lambda x: dim_map.get(x, x), 
+                key="input_cols",
+                placeholder="Escolha uma opção"  # Tradução
+            )
             add_total_cols = st.checkbox("Adicionar Total (Colunas)", key="input_chk_cols")
         with c3:
-            sel_metrics = st.multiselect("Métricas (Valores)", options=valid_metrics, default=default_metrics, format_func=lambda x: metrics_map.get(x, x), key="input_metrics")
+            sel_metrics = st.multiselect(
+                "Métricas (Valores)", 
+                options=valid_metrics, 
+                default=default_metrics, 
+                format_func=lambda x: metrics_map.get(x, x), 
+                key="input_metrics",
+                placeholder="Escolha uma opção"  # Tradução
+            )
             st.caption("Selecione os valores a calcular")
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -165,9 +186,11 @@ def render(df_crowley, cookies, data_atualizacao):
             
             d1, d2, _ = st.columns([1, 1, 2])
             with d1:
-                dt_ini = st.date_input("Início", value=default_ini, min_value=min_date, max_value=max_date)
+                # Alteração: Formato DD/MM/YYYY
+                dt_ini = st.date_input("Início", value=default_ini, min_value=min_date, max_value=max_date, format="DD/MM/YYYY")
             with d2:
-                dt_fim = st.date_input("Fim", value=max_date, min_value=min_date, max_value=max_date)
+                # Alteração: Formato DD/MM/YYYY
+                dt_fim = st.date_input("Fim", value=max_date, min_value=min_date, max_value=max_date, format="DD/MM/YYYY")
 
             # Construção Dinâmica dos Filtros (Respeitando Ordem)
             fields_ordered = []
@@ -199,7 +222,7 @@ def render(df_crowley, cookies, data_atualizacao):
                             filters_selected_ui[col_name] = st.multiselect(
                                 f"{display_name}", 
                                 options=options_list,
-                                placeholder="Todos",
+                                placeholder="Todos", # Garante placeholder em filtros também
                                 key=f"filter_{col_name}"
                             )
 
@@ -263,29 +286,33 @@ def render(df_crowley, cookies, data_atualizacao):
                                     else:
                                         if "TOTAL" in pivot.columns: pivot = pivot.drop("TOTAL", axis=1)
 
-                            # --- BLINDAGEM CONTRA ARROWINVALID ---
+                            # --- BLINDAGEM CONTRA ARROWINVALID (ÍNDICES) ---
                             if isinstance(pivot.index, pd.MultiIndex):
                                 new_levels = [lvl.astype(str) for lvl in pivot.index.levels]
                                 pivot.index = pivot.index.set_levels(new_levels, level=range(len(new_levels)))
                             else:
                                 pivot.index = pivot.index.astype(str)
-                            # -----------------------------------------------
-
+                            
+                            # --- RENOMEAÇÃO DE ÍNDICES ---
                             new_idx_names = [dim_map.get(n, n) for n in pivot.index.names]
                             pivot.index.names = new_idx_names
                             
+                            # --- RENOMEAÇÃO E CORREÇÃO DE COLUNAS (MIXED TYPES) ---
                             if pivot.columns.names:
                                 pivot.columns.names = [dim_map.get(n, n) for n in pivot.columns.names]
 
                             if isinstance(pivot.columns, pd.MultiIndex):
                                 new_levels = []
                                 for level_vals in pivot.columns.levels:
-                                    new_vals = [metrics_map.get(x, dim_map.get(x, x)) for x in level_vals]
+                                    # Força string para evitar Warning do PyArrow em colunas mistas
+                                    new_vals = [str(metrics_map.get(x, dim_map.get(x, x))) for x in level_vals]
                                     new_levels.append(new_vals)
                                 pivot.columns = pivot.columns.set_levels(new_levels, level=range(len(new_levels)))
                             else:
-                                new_cols = [metrics_map.get(x, x) for x in pivot.columns]
+                                # Força string aqui também
+                                new_cols = [str(metrics_map.get(x, x)) for x in pivot.columns]
                                 pivot.columns = new_cols
+                            # ----------------------------------------------------
 
                             # --- TRAVA DE VISUALIZAÇÃO ---
                             MAX_COLS_DISPLAY = 50
