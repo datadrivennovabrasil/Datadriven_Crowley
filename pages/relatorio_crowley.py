@@ -4,7 +4,7 @@ import pandas as pd
 from utils.loaders import load_crowley_base
 
 # ==================== IMPORTAÇÃO DOS MÓDULOS (NOVOS NOMES) ====================
-from pages import opportunity_radar, campaign_flow, presence_map, performance_index
+from pages import opportunity_radar, campaign_flow, presence_map, performance_index, relatorio_personalizado
 
 def render(cookies):
     
@@ -22,8 +22,14 @@ def render(cookies):
         <style>
         .nb-container { display: flex; justify-content: center; align-items: center; flex-direction: column; width: 100%; margin-top: 2rem; }
         
-        /* Ajuste do Grid para acomodar descrições */
-        .nb-grid { display: grid; grid-template-columns: repeat(2, 280px); grid-template-rows: repeat(2, 160px); gap: 1.5rem; justify-content: center; }
+        /* Ajuste do Grid para acomodar descrições e novos cards */
+        .nb-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 280px); /* 3 colunas para acomodar os cards */
+            grid-template-rows: auto; 
+            gap: 1.5rem; 
+            justify-content: center; 
+        }
         
         .nb-card { 
             background-color: #007dc3; 
@@ -58,6 +64,18 @@ def render(cookies):
         .nb-card:active { transform: scale(0.97); background-color: #004b8d; }
         
         .footer-date { margin-top: 50px; text-align: center; font-size: 0.85rem; color: #666; border-top: 1px solid #eee; padding-top: 10px; width: 100%; }
+        
+        /* Responsividade para mobile */
+        @media only screen and (max-width: 900px) {
+            .nb-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media only screen and (max-width: 600px) {
+            .nb-grid {
+                grid-template-columns: 1fr;
+            }
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -65,7 +83,6 @@ def render(cookies):
     
     # --- 1. MENU PRINCIPAL ---
     if current_view == "menu":
-        # ALTERAÇÃO AQUI: Título HTML centralizado com cor da marca
         st.markdown("<h1 style='text-align: center; color: #003366; margin-bottom: 0.5rem;'>Crowley Intelligence</h1>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:center; color: #555; margin-bottom: 1rem;'>Selecione o módulo de análise desejado:</div>", unsafe_allow_html=True)
 
@@ -74,19 +91,23 @@ def render(cookies):
           <div class="nb-grid">
             <a href="?view=opportunity" target="_self" class="nb-card">
                 Opportunity Radar
-                <span>Novos anunciantes de um<br>determinado período</span>
+                <span>Quem está entrando?<br>Onde estão as oportunidades?</span>
             </a>
             <a href="?view=campaign" target="_self" class="nb-card">
                 Campaign Flow
-                <span>Anunciantes exclusivos,<br>compartilhados e ausentes</span>
+                <span>Como o mercado se<br>movimenta no tempo?</span>
             </a>
             <a href="?view=presence" target="_self" class="nb-card">
                 Presence Map
-                <span>Presença de anunciantes<br>em horário comercial</span>
+                <span>Onde cada marca ocupa<br>(ou não) o território?</span>
             </a>
             <a href="?view=performance" target="_self" class="nb-card">
                 Performance Index
-                <span>Ranking comparativo<br>por anunciante</span>
+                <span>Quem é mais forte<br>e consistente?</span>
+            </a>
+            <a href="?view=custom" target="_self" class="nb-card">
+                Relatório Personalizado
+                <span>Crie sua própria visão<br>dinâmica dos dados</span>
             </a>
           </div>
         </div>
@@ -98,7 +119,7 @@ def render(cookies):
             </div>
         """, unsafe_allow_html=True)
 
-    # --- 2. ROTEAMENTO PARA OS NOVOS ARQUIVOS ---
+    # --- 2. ROTEAMENTO PARA OS MÓDULOS ---
     elif current_view == "opportunity":
         opportunity_radar.render(df_crowley, cookies, data_atualizacao)
 
@@ -110,6 +131,9 @@ def render(cookies):
     
     elif current_view == "presence":
         presence_map.render(df_crowley, cookies, data_atualizacao)
+        
+    elif current_view == "custom":
+        relatorio_personalizado.render(df_crowley, cookies, data_atualizacao)
     
     else:
         st.error("Página não encontrada.")

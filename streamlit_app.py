@@ -128,6 +128,7 @@ menu_options = [
     {"label": "Campaign Flow", "view": "campaign"},
     {"label": "Presence Map", "view": "presence"},
     {"label": "Performance Index", "view": "performance"},
+    {"label": "Relatório Personalizado", "view": "custom"},
 ]
 
 html_menu = []
@@ -160,10 +161,11 @@ def modal_boas_vindas():
     with st.container(height=320, border=True):
         st.markdown("""
         ### O que há de novo?
-        * **Opportunity Radar:** Quem está entrando? Onde estão as oportunidades? (Antigo Busca de Novos).
-        * **Campaign Flow:** Como o mercado se movimenta no tempo? (Antigo ECA).
-        * **Presence Map:** Onde cada marca ocupa o território? (Antigo Flight).
-        * **Performance Index:** Quem é mais forte e consistente? (Antigo Ranking).
+        * **Relatório Personalizado:** Crie suas próprias tabelas dinâmicas cruzando qualquer dado disponível.
+        * **Opportunity Radar:** Quem está entrando? Onde estão as oportunidades?
+        * **Campaign Flow:** Como o mercado se movimenta no tempo?
+        * **Presence Map:** Onde cada marca ocupa o território?
+        * **Performance Index:** Quem é mais forte e consistente?
         ---
         """)
         st.markdown("**Dúvidas:** (31) 9.9274-4574 - Silvia Freitas")
