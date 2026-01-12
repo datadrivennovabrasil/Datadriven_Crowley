@@ -35,8 +35,7 @@ def prepare_custom_data(df_raw):
     # Identifica colunas válidas
     raw_dims = [c for c in dim_map.keys() if c in df.columns]
     
-    # ORDENAÇÃO ALFABÉTICA DAS OPÇÕES (ETAPA 1)
-    # Ordena as chaves baseadas no valor de exibição (dim_map)
+    # ORDENAÇÃO ALFABÉTICA (A-Z)
     valid_dims = sorted(raw_dims, key=lambda x: dim_map.get(x, x))
     
     # Gera opções de filtros usando categorias (Performance)
@@ -106,7 +105,6 @@ def render(df_crowley, cookies, data_atualizacao):
     with st.form("form_structure"):
         c1, c2, c3 = st.columns(3)
         with c1:
-            # valid_dims já está ordenado alfabeticamente
             sel_rows = st.multiselect("Linhas (Índice)", options=valid_dims, default=default_rows, format_func=lambda x: dim_map.get(x, x), key="input_rows")
             add_total_rows = st.checkbox("Adicionar Total (Linhas)", key="input_chk_rows")
         with c2:
@@ -157,7 +155,7 @@ def render(df_crowley, cookies, data_atualizacao):
         s_metrics = st.session_state.cust_metrics
         
         with st.form("form_filters"):
-            # --- 2. Período (Apenas Data) ---
+            # Período
             st.markdown("##### Período") 
             
             min_date = date(2024, 1, 1)
@@ -165,28 +163,25 @@ def render(df_crowley, cookies, data_atualizacao):
             except: max_date = datetime.now().date()
             default_ini = max(min_date, max_date - timedelta(days=30))
             
-            d1, d2, _ = st.columns([1, 1, 2]) # Layout ajustado para esquerda
+            d1, d2, _ = st.columns([1, 1, 2])
             with d1:
                 dt_ini = st.date_input("Início", value=default_ini, min_value=min_date, max_value=max_date)
             with d2:
                 dt_fim = st.date_input("Fim", value=max_date, min_value=min_date, max_value=max_date)
 
-            # --- Construção da Lista de Filtros Respeitando Ordem ---
+            # Construção Dinâmica dos Filtros (Respeitando Ordem)
             fields_ordered = []
             seen = set()
             
-            # 1. Adiciona campos selecionados na ordem (Linhas depois Colunas)
             for c in s_rows + s_cols:
                 if c not in seen:
                     fields_ordered.append(c)
                     seen.add(c)
             
-            # 2. Garante que "Praca" esteja na lista (Se não selecionado na estrutura, entra no início)
             if "Praca" not in seen:
                 fields_ordered.insert(0, "Praca")
                 seen.add("Praca")
             
-            # Remove campos de data da lista de filtros dinâmicos (já tratados acima)
             fields_to_filter = [f for f in fields_ordered if f not in ["Data", "Data_Dt"]]
             
             filters_selected_ui = {}
@@ -214,16 +209,16 @@ def render(df_crowley, cookies, data_atualizacao):
                 submitted_report = st.form_submit_button("Gerar Relatório", type="primary", use_container_width=True)
 
         if submitted_report:
-            with st.spinner("Processando dados (otimizado)..."):
+            with st.spinner("Processando dados..."):
                 time.sleep(0.1)
                 
                 ts_ini = pd.Timestamp(dt_ini)
                 ts_fim = pd.Timestamp(dt_fim) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
                 
-                # 1. Filtro de Data
+                # 1. Filtro Data
                 mask = (df["Data_Dt"] >= ts_ini) & (df["Data_Dt"] <= ts_fim)
                 
-                # 2. Filtros Dinâmicos (Incluindo Praça se selecionada)
+                # 2. Filtros Dinâmicos
                 real_filters_selected = {}
                 for col, vals in filters_selected_ui.items():
                     if vals:
@@ -268,6 +263,14 @@ def render(df_crowley, cookies, data_atualizacao):
                                     else:
                                         if "TOTAL" in pivot.columns: pivot = pivot.drop("TOTAL", axis=1)
 
+                            # --- BLINDAGEM CONTRA ARROWINVALID ---
+                            if isinstance(pivot.index, pd.MultiIndex):
+                                new_levels = [lvl.astype(str) for lvl in pivot.index.levels]
+                                pivot.index = pivot.index.set_levels(new_levels, level=range(len(new_levels)))
+                            else:
+                                pivot.index = pivot.index.astype(str)
+                            # -----------------------------------------------
+
                             new_idx_names = [dim_map.get(n, n) for n in pivot.index.names]
                             pivot.index.names = new_idx_names
                             
@@ -284,7 +287,9 @@ def render(df_crowley, cookies, data_atualizacao):
                                 new_cols = [metrics_map.get(x, x) for x in pivot.columns]
                                 pivot.columns = new_cols
 
-                            st.session_state.pivot_is_preview = (pivot.size > 100_000)
+                            # --- TRAVA DE VISUALIZAÇÃO ---
+                            MAX_COLS_DISPLAY = 50
+                            st.session_state.pivot_is_preview = (pivot.size > 100_000) or (pivot.shape[1] > MAX_COLS_DISPLAY)
                             st.session_state.custom_pivot_cache = pivot
                             
                             st.session_state.custom_filters_info = {
@@ -312,14 +317,25 @@ def render(df_crowley, cookies, data_atualizacao):
         
         if is_preview:
             preview_rows = 500
-            pivot_display = full_pivot.iloc[:preview_rows]
+            preview_cols = 50
+            
+            pivot_display = full_pivot.iloc[:preview_rows, :preview_cols]
+            
+            warning_msg = f"<strong>Prévia de Exibição</strong><br>O relatório completo possui <strong>{len(full_pivot):,.0f} linhas</strong> e <strong>{full_pivot.shape[1]} colunas</strong>."
+            
+            reasons = []
+            if full_pivot.shape[0] > preview_rows:
+                reasons.append(f"apenas as primeiras {preview_rows} linhas")
+            if full_pivot.shape[1] > preview_cols:
+                reasons.append(f"apenas as primeiras {preview_cols} colunas")
+            
+            if reasons:
+                warning_msg += f"<br>Exibindo {' e '.join(reasons)}. Baixe o Excel para ver tudo."
+
             st.markdown(f"""
                 <div class="preview-warning">
                     <span>⚠️</span>
-                    <div>
-                        <strong>Prévia: Exibindo primeiras {preview_rows} linhas</strong><br>
-                        O relatório completo possui <strong>{len(full_pivot):,.0f} linhas</strong>. Baixe o Excel para ver tudo.
-                    </div>
+                    <div>{warning_msg}</div>
                 </div>
             """, unsafe_allow_html=True)
             st.dataframe(pivot_display, height=500, width="stretch")
@@ -342,6 +358,15 @@ def render(df_crowley, cookies, data_atualizacao):
             df_to_export = st.session_state.get("custom_pivot_cache")
             filters_info = st.session_state.get("custom_filters_info", {})
             
+            # --- VERIFICAÇÃO DE LIMITE DE COLUNAS DO EXCEL ---
+            if df_to_export is not None and df_to_export.shape[1] > 16384:
+                st.error(f"Não foi possível concluir o relatório devido ao relatório possuir {df_to_export.shape[1]} colunas (o limite do Excel é 16384). Por favor, ajuste os filtros para gerar um relatório menor.")
+                if st.button("Fechar", key="btn_close_export_error"):
+                    st.session_state.show_custom_export = False
+                    st.rerun()
+                return
+            # -------------------------------------------------
+
             if df_to_export is not None and df_to_export.size > 500_000:
                 st.info("O arquivo é grande, isso pode levar alguns segundos...")
             
