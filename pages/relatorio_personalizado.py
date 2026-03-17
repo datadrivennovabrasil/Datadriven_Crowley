@@ -225,16 +225,19 @@ def render(df_crowley, cookies, data_atualizacao):
         df_period = df[(df["Data_Dt"] >= ts_ini) & (df["Data_Dt"] <= ts_fim)].copy()
 
         priority_filters = ["Praca", "Emissora", "Anunciante", "Anuncio"]
+        hidden_period_dims = {"Ano", "Mes", "Dia", "Data", "Data_Dt"}
+        extra_filters = ["Tipo", "Produto", "Programa", "DayPart"]
+
         fields_ordered = []
         seen = set()
-        for col in priority_filters + s_rows + s_cols + ["Tipo", "Produto", "Programa", "DayPart", "Ano", "Mes", "Dia"]:
-            if col in df.columns and col not in seen and col not in ["Data", "Data_Dt"]:
+        for col in priority_filters + s_rows + s_cols + extra_filters:
+            if col in df.columns and col not in seen and col not in hidden_period_dims:
                 fields_ordered.append(col)
                 seen.add(col)
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("##### Filtros")
-        st.caption("Os filtros abaixo respeitam primeiro o período selecionado e depois funcionam em cascata: Praça → Veículo → Anunciante → Anúncio.")
+        st.caption("Os filtros abaixo respeitam primeiro o período selecionado e depois funcionam em cascata: Praça → Veículo → Anunciante → Anúncio. Mês, ano e dia são controlados apenas pelo período acima.")
 
         if df_period.empty:
             st.info("Não há dados no período selecionado. Ajuste as datas para carregar as opções de filtro.")
