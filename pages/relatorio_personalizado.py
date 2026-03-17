@@ -14,7 +14,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 def prepare_custom_data(df_raw):
     df = df_raw.copy()
 
-    if "Data_Dt" not in df.columns and "Data" in df.columns:
+    if "Data_Dt" in df.columns:
+        df["Data_Dt"] = pd.to_datetime(df["Data_Dt"], errors="coerce")
+    elif "Data" in df.columns:
         df["Data_Dt"] = pd.to_datetime(df["Data"], dayfirst=True, errors="coerce")
 
     if "Data_Dt" in df.columns:
@@ -75,7 +77,7 @@ def render(df_crowley, cookies, data_atualizacao):
         keys_to_clear = [
             "custom_step", "custom_pivot_cache", "custom_filters_info", "show_custom_export",
             "cust_rows", "cust_cols", "cust_metrics", "pivot_too_big", "pivot_is_preview",
-            "last_struct"
+            "last_struct", "custom_period_signature"
         ]
         for k in list(st.session_state.keys()):
             if k.startswith("custom_filter_"):
@@ -166,6 +168,7 @@ def render(df_crowley, cookies, data_atualizacao):
             if st.session_state.get("last_struct") != current_struct:
                 st.session_state.pop("custom_pivot_cache", None)
                 st.session_state.pop("pivot_is_preview", None)
+                st.session_state.pop("custom_period_signature", None)
                 for k in list(st.session_state.keys()):
                     if k.startswith("custom_filter_"):
                         st.session_state.pop(k, None)
@@ -182,11 +185,20 @@ def render(df_crowley, cookies, data_atualizacao):
         s_metrics = st.session_state.cust_metrics
 
         st.markdown("##### Período")
-        min_date = date(2024, 1, 1)
+        if "Data_Dt" not in df.columns or df["Data_Dt"].dropna().empty:
+            st.error("A base não possui datas válidas para o filtro de período.")
+            st.stop()
+
+        data_min_base = df["Data_Dt"].min().date()
+        data_max_base = df["Data_Dt"].max().date()
+
+        min_date = data_min_base
         try:
-            max_date = datetime.strptime(data_atualizacao, "%d/%m/%Y").date()
+            max_date_cfg = datetime.strptime(data_atualizacao, "%d/%m/%Y").date()
+            max_date = min(max_date_cfg, data_max_base) if pd.notna(data_max_base) else max_date_cfg
         except Exception:
-            max_date = datetime.now().date()
+            max_date = data_max_base
+
         default_ini = max(min_date, max_date - timedelta(days=30))
 
         d1, d2, _ = st.columns([1, 1, 2])
@@ -194,6 +206,19 @@ def render(df_crowley, cookies, data_atualizacao):
             dt_ini = st.date_input("Início", value=default_ini, min_value=min_date, max_value=max_date, format="DD/MM/YYYY", key="custom_dt_ini")
         with d2:
             dt_fim = st.date_input("Fim", value=max_date, min_value=min_date, max_value=max_date, format="DD/MM/YYYY", key="custom_dt_fim")
+
+        if dt_ini > dt_fim:
+            st.warning("A data inicial não pode ser maior que a final.")
+            st.stop()
+
+        period_signature = f"{dt_ini.isoformat()}__{dt_fim.isoformat()}"
+        if st.session_state.get("custom_period_signature") != period_signature:
+            for k in list(st.session_state.keys()):
+                if k.startswith("custom_filter_"):
+                    st.session_state.pop(k, None)
+            st.session_state["custom_period_signature"] = period_signature
+            st.session_state.pop("custom_pivot_cache", None)
+            st.session_state.pop("pivot_is_preview", None)
 
         ts_ini = pd.Timestamp(dt_ini)
         ts_fim = pd.Timestamp(dt_fim) + pd.Timedelta(days=1) - pd.Timedelta(seconds=1)
@@ -209,7 +234,12 @@ def render(df_crowley, cookies, data_atualizacao):
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("##### Filtros")
-        st.caption("Os filtros abaixo são em cascata: Praça → Veículo → Anunciante → Anúncio. As opções se ajustam automaticamente ao contexto selecionado.")
+        st.caption("Os filtros abaixo respeitam primeiro o período selecionado e depois funcionam em cascata: Praça → Veículo → Anunciante → Anúncio.")
+
+        if df_period.empty:
+            st.info("Não há dados no período selecionado. Ajuste as datas para carregar as opções de filtro.")
+            st.session_state.pop("custom_pivot_cache", None)
+            st.stop()
 
         available_mappings = {}
         df_context = df_period.copy()
